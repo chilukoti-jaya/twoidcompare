@@ -1,0 +1,68 @@
+mport pandas as pd
+
+def compare_dataframes(df1, df2):
+    """
+    Compare two DataFrames based on id and login name matching.
+   
+    Parameters:
+    df1 (pd.DataFrame): First DataFrame with columns ['empid', 'devloginname', 'appname']
+    df2 (pd.DataFrame): Second DataFrame with columns ['id', 'uatloginname', 'idtype']
+   
+    Returns:
+    tuple:
+    - matched_records (DataFrame): Records that match in both DataFrames
+    - unmatched_df1 (DataFrame): Records from df1 that don't have a match
+    - unmatched_df2 (DataFrame): Records from df2 that don't have a match
+    """
+    # Rename columns to standardize for comparison
+    df1_renamed = df1.rename(columns={'empid': 'id', 'devloginname': 'loginname'})
+    df2_renamed = df2.rename(columns={'uatloginname': 'loginname'})
+   
+    # Merge DataFrames to find matching and non-matching records
+    # Use how='outer' to keep all records from both DataFrames
+    merged_df = pd.merge(
+        df1_renamed,
+        df2_renamed,
+        on=['id', 'loginname'],
+        how='outer',
+        indicator=True
+    )
+   
+    # Separate matched and unmatched records
+    matched_records = merged_df[merged_df['_merge'] == 'both'].drop(columns=['_merge'])
+   
+    # Unmatched records from df1 (only in left DataFrame)
+    unmatched_df1 = merged_df[merged_df['_merge'] == 'left_only'].drop(columns=['_merge'])
+   
+    # Unmatched records from df2 (only in right DataFrame)
+    unmatched_df2 = merged_df[merged_df['_merge'] == 'right_only'].drop(columns=['_merge'])
+   
+    # Restore original column names for matched and unmatched DataFrames
+    matched_columns = list(df1.columns) + list(set(df2.columns) - set(matched_records.columns))
+    matched_records = matched_records[matched_columns]
+   
+    unmatched_df1_columns = list(df1.columns)
+    unmatched_df1 = unmatched_df1[unmatched_df1_columns]
+   
+    unmatched_df2_columns = list(df2.columns)
+    unmatched_df2 = unmatched_df2[unmatched_df2_columns]
+   
+    return matched_records, unmatched_df1, unmatched_df2
+
+# Example usage
+# df1 = pd.DataFrame({
+#     'empid': [1, 2, 3, 4],
+#     'devloginname': ['john', 'jane', 'mike', 'sara'],
+#     'appname': ['app1', 'app2', 'app3', 'app4']
+# })
+#
+# df2 = pd.DataFrame({
+#     'id': [1, 2, 5, 6],
+#     'uatloginname': ['john', 'jane', 'tom', 'lisa'],
+#     'idtype': ['type1', 'type2', 'type3', 'type4']
+# })
+#
+# matched, unmatched_1, unmatched_2 = compare_dataframes(df1, df2)
+# print("Matched Records:\n", matched)
+# print("\nUnmatched Records from df1:\n", unmatched_1)
+# print("\nUnmatched Records from df2:\n", unmatched_2)
